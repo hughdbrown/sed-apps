@@ -1,0 +1,4 @@
+#!/usr/bin/env python
+from sed_require_sort import main
+
+main()
