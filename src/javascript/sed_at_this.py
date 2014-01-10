@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 import re
 
-from engine import (
+from sed.engine import (
     StreamEditor,
     call_main,
     ACCEPT
 )
-from engine.sed_regex import (
+from sed.engine.sed_regex import (
     FUNCTION_HEADER, WGEN_CLASS, WGEN_FUNCTION,
     CONSTRUCTOR_FMT, NAMESPACE_FMT, EXTENDS_FMT
 )

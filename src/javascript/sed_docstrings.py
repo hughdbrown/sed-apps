@@ -3,7 +3,7 @@
 from sys import stderr
 import re
 
-from engine import (
+from sed.engine import (
     StreamEditor,
     call_main,
     ACCEPT, REJECT, NEXT, REPEAT,

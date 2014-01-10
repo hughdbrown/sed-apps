@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
-from engine import (
+from sed.engine import (
     StreamEditor,
     call_main,
     ACCEPT, REJECT, NEXT
 )
-from engine.sed_util import comma_terminate
-from engine.sed_regex import \
+from sed.engine.sed_util import comma_terminate
+from sed.engine.sed_regex import \
     END_DECL, END_VAR_DECL, FUNCTION_HEADER, SELECTOR, VAR_DECL
 
 

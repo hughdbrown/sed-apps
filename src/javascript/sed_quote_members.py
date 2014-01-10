@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-from engine import (
+from sed.engine import (
     StreamEditor,
     call_main,
     ACCEPT
 )
-from engine.sed_regex import FUNCTION_HEADER
+from sed.engine.sed_regex import FUNCTION_HEADER
 
 FMT = """%(leading_space)s'%(function_header)s' : """ \
       """function (%(arg_list)s) %(rest)s"""

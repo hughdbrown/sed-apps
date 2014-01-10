@@ -2,7 +2,7 @@
 
 import re
 
-from engine import (
+from sed.engine import (
     StreamEditor,
     call_main,
     ACCEPT, NEXT, REPEAT
