@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-from engine import (
+from sed.engine import (
     StreamEditor,
     call_main,
     ACCEPT
 )
-from engine.sed_regex import FUNCTION_HEADER, PRIVATE_FMT
+from sed.engine.sed_regex import FUNCTION_HEADER, PRIVATE_FMT
 
 
 # Match all functions in the class

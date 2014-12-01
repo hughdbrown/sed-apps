@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-from engine import (
+from sed.engine import (
     StreamEditor,
     call_main,
     ACCEPT, REJECT, NEXT, REPEAT
 )
-from engine.sed_regex import COMMENT_OPEN, COMMENT_CLOSE, BLANK_LINE, ALL
+from sed.engine.sed_regex import COMMENT_OPEN, COMMENT_CLOSE, BLANK_LINE, ALL
 
 
 # Find consecutive jsdoc comments
