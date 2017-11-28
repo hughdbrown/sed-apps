@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 def reqs_from_file(filename):
@@ -11,7 +11,7 @@ def reqs_from_file(filename):
 
 setup(
     name='sed-apps',
-    version='0.1.1',
+    version='0.1.2',
     description='Suite of tools that use sed-engine',
     author='Hugh Brown',
     author_email='hughdbrown@yahoo.com',
@@ -21,28 +21,19 @@ setup(
     tests_require=reqs_from_file('test-requirements.txt'),
 
     # Main packages
-    packages=[
-        'src',
-    ],
-
+    #packages=[
+    #    'src.javascript',
+    #    'src.python',
+    #],
+    packages=find_packages(),
     zip_safe=False,
 
-    scripts=[
-        'bin/sed-at-this',
-        'bin/sed-comment-merge',
-        'bin/sed-docstrings',
-        'bin/sed-events',
-        'bin/sed-extend-decl',
-        'bin/sed-inject-delegate-events',
-        'bin/sed-inject-private',
-        'bin/sed-move-events',
-        'bin/sed-quote-members',
-        'bin/sed-require-sort',
-        'bin/sed-revert-delegate-events',
-        'bin/sed-rewrite-app-get',
-    ],
     entry_points={
         'console_scripts': [
+            # Python modifiers
+            'sed-python-func-debug=src.python.sed_python_func_debug:main',
+
+            # Javascript modifiers
             'sed-at-this = src.javascript.sed_at_this:main',
             'sed-comment-merge = src.javascript.sed_comment_merge:main',
             'sed-docstrings = src.javascript.sed_docstrings:main',
