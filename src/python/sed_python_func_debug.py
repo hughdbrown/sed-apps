@@ -41,7 +41,7 @@ class StreamEditorInsertDebugAfterDef(StreamEditor):
 
     def apply_match(self, i, dict_matches):
         LOGGER.debug(dict_matches)
-        fmt = "{0[indent]}    {1}.debug('{0[func_name]}')"
+        fmt = "{0[indent]}    {1}.info('{2}::{0[func_name]}')"
         matches = dict_matches["matches"]
         fns = [match for match in matches if match.get('func_name')]
         logger = [match for match in matches if match.get("name")]
@@ -51,7 +51,7 @@ class StreamEditorInsertDebugAfterDef(StreamEditor):
         for match in sorted(fns, key=itemgetter('line_no'), reverse=True):
             # {'func_name': '__init__', 'line_no': 41, 'indent': '    '}
             LOGGER.debug(match)
-            s = fmt.format(match, logger_name)
+            s = fmt.format(match, logger_name, self.filename)
             self.append_range(match["line_no"], [s])
 
 
