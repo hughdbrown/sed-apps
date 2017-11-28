@@ -1,0 +1,5 @@
+build/
+dist/
+sed_apps.egg-info/
+*.pyc
+
