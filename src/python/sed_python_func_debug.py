@@ -22,7 +22,7 @@ DEF_FUNC = re.compile(r"""
     ^(?P<indent>\s*)
     def\s+
     (?P<func_name>[\d\w_]+)
-    \(.*\):$
+    .*$
 """, re.VERBOSE)
 
 logging.basicConfig(level=logging.DEBUG)
@@ -46,14 +46,22 @@ class StreamEditorInsertDebugAfterDef(StreamEditor):
         fns = [match for match in matches if match.get('func_name')]
         logger = [match for match in matches if match.get("name")]
         assert len(logger) == 1
-        logger_name = logger[0]["name"]
 
         for match in sorted(fns, key=itemgetter('line_no'), reverse=True):
             # {'func_name': '__init__', 'line_no': 41, 'indent': '    '}
             LOGGER.debug(match)
-            s = fmt.format(match, logger_name, self.filename)
-            self.append_range(match["line_no"], [s])
+            match_line = match["line_no"]
+            #s = fmt.format(match, logger_name, self.filename)
+            #self.append_range(match_line, [s])
+            s = "{0[indent]}@func_inspect".format(match)
+            self.insert_range(match_line, [s])
 
+        # If you do this first, then all the lines will be off in
+        # the function-name matches above.
+        logger = logger[0]
+        logger_name, logger_line = logger["name"], logger["line_no"]
+        s = "from MMApp.decorators import func_inspect"
+        self.insert_range(logger_line, [s])
 
 def main():
     return call_main(StreamEditorInsertDebugAfterDef)
