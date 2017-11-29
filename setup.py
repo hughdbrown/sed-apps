@@ -32,6 +32,7 @@ setup(
         'console_scripts': [
             # Python modifiers
             'sed-python-func-debug=src.python.sed_python_func_debug:main',
+            'sed-python-logging-injector=src.python.sed_python_logging_injector:main',
 
             # Javascript modifiers
             'sed-at-this = src.javascript.sed_at_this:main',
