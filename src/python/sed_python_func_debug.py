@@ -15,11 +15,19 @@ from sed.engine import (
     REPEAT, NEXT
 )
 
-HAS_LOGGER = re.compile(r"""
-    ^(?P<name>[\d\w_]+)
-    \s*\=\s*
-    (logging\.)?
-    getLogger.*$
+REG_IMPORT = re.compile(r"""
+    ^import\s+
+    (?P<library>[\w\d_\.]+)
+    .*
+    $
+""", re.VERBOSE)
+
+FROM_IMPORT = re.compile(r"""
+    ^from\s+
+    (?P<library>[\w\d_\.]+)\s
+    import\s
+    (?P<imports>[\w\d_\.]+(,\s+[\w\d_\.]+)*)
+    .*$
 """, re.VERBOSE)
 
 DEF_FUNC = re.compile(r"""
@@ -48,7 +56,7 @@ class StreamEditorInsertDebugAfterDef(StreamEditor):
     (Reimplemented to use decorators on methods.)
     """
     table = [
-        [[HAS_LOGGER, NEXT], ],
+        [[FROM_IMPORT, REPEAT], [REG_IMPORT, REPEAT], [DEF_FUNC, NEXT], ],
         [[DEF_FUNC, REPEAT], ],
     ]
 
@@ -67,14 +75,13 @@ class StreamEditorInsertDebugAfterDef(StreamEditor):
             """
             prev_line = lines[match_line - 1]
             return not prev_line.lstrip().startswith(
-                ("@staticmethod", "@classmethod")
+                ("@staticmethod", "@classmethod", "@abstractmethod")
             )
 
         LOGGER.debug(dict_matches)
         matches = dict_matches["matches"]
         fns = [match for match in matches if match.get('func_name')]
-        logger = [match for match in matches if match.get("name")]
-        assert len(logger) == 1
+        imports = [match for match in matches if match.get("library")]
 
         for match in sorted(fns, key=itemgetter('line_no'), reverse=True):
             # {'func_name': '__init__', 'line_no': 41, 'indent': '    '}
@@ -86,10 +93,9 @@ class StreamEditorInsertDebugAfterDef(StreamEditor):
 
         # If you do this first, then all the lines will be off in
         # the function-name matches above.
-        logger = logger[0]
-        logger_line = logger["line_no"]
+        import_line = max(imp["line_no"] for imp in imports)
         insert_str = "from MMApp.decorators import func_inspect"
-        self.insert_range(logger_line, [insert_str])
+        self.append_range(import_line, [insert_str])
 
 def main():
     """ Main entry point"""
