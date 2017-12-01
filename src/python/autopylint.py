@@ -169,7 +169,7 @@ def len_as_condition(editor, item):
     ''', re.VERBOSE)
     line_no = item.line_no
     error_text = editor.lines[line_no]
-    for reg, fmt in ((zero_cmp, "{left}not {len}{right}"), (nzero_cmp, "{left} {len}{right}")):
+    for reg, fmt in ((zero_cmp, "{left}not {len}{right}"), (nzero_cmp, "{left}{len}{right}")):
         match = reg.match(error_text)
         if match:
             repaired_line = fmt.format(**match.groupdict())
