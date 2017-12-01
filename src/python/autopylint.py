@@ -134,7 +134,15 @@ def missing_docstring(editor, item):
             '{0}""" Pro forma function/method docstring """' if rest.startswith("def ")
             else '{0}""" Pro forma class docstring """'
         )
-        docstring = fmt.format(indent + "    ", )
+        docstring = fmt.format(indent + "    ")
+        for x in range(10):
+            if "):" in editor.lines[line_no + x]:
+                line_no += x
+                break
+        else:
+            # If we cannot find where a function/class definition ends
+            # in reasonable time, give up.
+            return
     func(line_no, [docstring])
 
 
