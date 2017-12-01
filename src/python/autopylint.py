@@ -193,6 +193,11 @@ def  trailing_whitespace(editor, item):
     editor.replace_range(loc, [repaired_line])
 
 
+def ungrouped_imports(*_):
+    """ Pylint ungrouped-imports method """
+    pass
+
+
 def no_op(*_):
     """ Pylint no-op method """
     pass
@@ -210,6 +215,7 @@ FN_TABLE = {
     "bad-continuation": bad_continuation,
     "len-as-condition": len_as_condition,
     "trailing-whitespace": trailing_whitespace,
+    "ungrouped-imports": ungrouped_imports,
 }
 
 # pylint: disable=too-few-public-methods
