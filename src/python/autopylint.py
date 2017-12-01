@@ -106,7 +106,7 @@ def no_self_use(editor, item):
     error_text = editor.lines[line_no]
     LOGGER.info(error_text)
     indent, _ = get_indent(error_text)
-    editor.lines[line_no] = error_text.replace("self, ", "")
+    editor.lines[line_no] = error_text.replace("self, ", "").replace("(self)", "()")
     editor.insert_range(line_no, ["{0}@staticmethod".format(indent)])
 
 
