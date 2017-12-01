@@ -6,7 +6,6 @@ inject decorators at the head of function definitions.
 """
 import sys
 import re
-from operator import itemgetter
 import logging
 
 from sed.engine import (
@@ -68,7 +67,7 @@ class StreamEditorInjectLogging(StreamEditor):
         assert libraries
 
         # If `logging` not already imported, add it.
-        if not any('logging' == m['library'] for m in libraries):
+        if not any(m['library'] == 'logging' for m in libraries):
             match = libraries[-1]
             match_line = match["line_no"]
             insert_str = "import logging\n\nlogger = logging.getLogger(__name__)"
