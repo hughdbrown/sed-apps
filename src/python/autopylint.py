@@ -178,9 +178,25 @@ def invalid_name(*_):
     pass
 
 
-def unused_import(*_):
+def unused_import(editor, item):
     """ Pylint method to fix unused_import error """
-    pass
+    line_no = item.line_no
+    error_text = editor.lines[line_no]
+    remove = item.desc.split(' ')[1]
+    from_imp = re.compile(
+        r"^from (?P<library>[\w\d_\.]+) import (?P<imports>[\w\d_\.,\s]+)"
+    )
+    m = from_imp.match(error_text)
+    if m:
+        groups = m.groupdict()
+        library = groups["library"]
+        imports = [imp.strip() for imp in groups["imports"].split(',')]
+        repaired_line = "from {0} import {1}".format(
+            library,
+            ", ".join(sorted(set(imports) - set([remove])))
+        )
+        loc = (line_no, line_no + 1)
+        editor.replace_range(loc, [repaired_line])
 
 
 def misplaced_comparison_constant(*_):
