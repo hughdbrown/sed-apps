@@ -112,9 +112,14 @@ def bad_whitespace(editor, item):
     error_text = editor.lines[line_no]
     LOGGER.info(error_text)
     if item.desc == "No space allowed around keyword argument assignment":
-        editor.lines[line_no] = re.sub(r"\s+=\s+", error_text, "=")
+        repaired_line = re.sub(r"\s+=\s+", error_text, r"=")
     elif item.desc == "Exactly one space required after comma":
-        editor.lines[line_no] = re.sub(r"\s+,\s+", error_text, ", ")
+        repaired_line = re.sub(r"\s+,\s+", error_text, ", ")
+    else:
+        repaired_line = None
+    if repaired_line:
+        editor.replace_range((line_no, line_no + 1), repaired_line)
+    return (line_no, 0)
 
 
 def bad_continuation(*_):
