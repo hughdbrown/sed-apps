@@ -16,13 +16,22 @@ from operator import attrgetter
 from sed.engine import (
     StreamEditor,
     call_main,
-    REPEAT, NEXT, CUT,
+    REPEAT, NEXT, CUT, ANY,
 )
 
 MODULE_NAME = re.compile(r"""
     ^\*+\s
     Module\s+
     (?P<filename>[\w\d\._-]+)
+    $
+""", re.VERBOSE)
+
+STD_IMPORT = re.compile(r"""
+    ^
+    standard\simport\s
+    \"(?P<before>[^"]+)\"
+    \sshould\sbe\splaced\sbefore\s
+    \"(?P<after>[^"]+)\"
     $
 """, re.VERBOSE)
 
@@ -52,6 +61,40 @@ PYLINT_ITEM = re.compile(r"""
 """, re.VERBOSE)
 
 
+PYLINT_SEMI_ITEM = re.compile(r"""
+    ^
+    (?P<type>[ERCW])
+    :\s*
+    (?P<where1>\d+)
+    ,\s*
+    (?P<where2>-?\d+)
+    :\s+
+    (?P<desc>.*?)
+    $
+""", re.VERBOSE)
+
+
+PYLINT_ERROR_ITEM = re.compile(r"""
+    ^
+    \s*
+    (\^+|\^\s*\||\|\s*\^)
+    \s*
+    \(
+    (?P<error>[\w_\.-]+)
+    \)
+    $
+""", re.VERBOSE)
+
+IF_STMT = re.compile(r"""
+    ^
+    if\s+
+    (?P<first>.*?)
+    \s+and\s+
+    (?P<second>.*?):
+    $
+""", re.VERBOSE)
+
+
 # pylint: disable=logging-format-interpolation
 logging.basicConfig(level=logging.DEBUG)
 LOGGER = logging.getLogger(__name__)
@@ -64,10 +107,61 @@ def item_maker(match):
         match["type"],
         int(match["where1"]) - 1,
         int(match["where2"]),
-        match["desc"],
-        match["error"]
+        match["desc"].rstrip(),
+        match["error"].rstrip()
     )
 
+
+def get_indent(src):
+    """ Helper function to get the leading whitespace from a line """
+    match = re.match(r"^(\s*)(.*)$", src)
+    return match.group(1), match.group(2)
+
+
+def line_split(s, length):
+    def get_counts(s, k):
+        return [i for i, c in enumerate(s) if c == k]
+
+    def remove_negative_counts(counts):
+        try:
+            return +counts
+        except TypeError:
+            return Counter({k: v for k, v in counts.items() if v > 0})
+
+    if len(s) <= length:
+        result = [s]
+    else:
+        ind0, non_indent = get_indent(s)
+        ind1 = ind0 + "    "
+        ind2 = ind0 + 2 * "    "
+        m = IF_STMT.match(non_indent)
+        if m:
+            g = m.groupdict()
+            result = [
+                ind0 + "if (",
+                ind2 + g["first"] + " and",
+                ind2 + g["second"],
+                ind0 + "):"
+            ]
+        else:
+            counts = Counter({
+                k: get_counts(s, k)
+                for k in """()[]{}"'"""
+            })
+            counts = remove_negative_counts(counts)
+            commas = get_counts(s, ',')
+
+            cv = [a for a in counts.values() if a]
+            if cv:
+                mi, ma = min(a[0] for a in cv), max(a[-1] for a in cv)
+                if (s[mi] + s[ma]) in {'()', '{}', '[]'}:
+                    result = [s[:mi + 1], ind1 + s[mi + 1:ma], ind0 + s[ma:]]
+                else:
+                    result = None
+            else:
+                LOGGER.info("Weird: {0}".format(counts))
+                result = None
+    return result
 
 def find_string(s):
     result = next((i, c) for i, c in enumerate(s) if c in ('"', "'"))
@@ -100,31 +194,54 @@ class EditorOptions(object):
         self.dryrun = False
 
 
-def get_indent(src):
-    """ Helper function to get the leading whitespace from a line """
-    match = re.match(r"^(\s*)(.*)$", src)
-    return match.group(1), match.group(2)
-
-
 def bad_whitespace(editor, item):
     """ Pylint method to fix bad-whitespace error """
     line_no = item.line_no
     error_text = editor.lines[line_no]
-    LOGGER.info(error_text)
     if item.desc == "No space allowed around keyword argument assignment":
-        repaired_line = re.sub(r"\s+=\s+", error_text, r"=")
+        repaired_line = re.sub(r"\s+=\s+", "=", error_text, count=1)
     elif item.desc == "Exactly one space required after comma":
-        repaired_line = re.sub(r"\s+,\s+", error_text, ", ")
+        repaired_line = re.sub(r",\s*", ", ", error_text)
+    elif item.desc == "No space allowed after bracket":
+        repaired_line = re.sub(r"{\s+", "{", error_text)
+    elif item.desc == "No space allowed before bracket":
+        repaired_line = re.sub(r"\s+}", "}", error_text)
+    elif item.desc == "Exactly one space required around comparison":
+        repaired_line = re.sub(r"\s*==\s*", " == ", error_text)
+        repaired_line = re.sub(r"\s*!=\s*", " != ", repaired_line)
     else:
+        LOGGER.info("No match on '{0}'".format(item.desc))
         repaired_line = None
     if repaired_line:
-        editor.replace_range((line_no, line_no + 1), repaired_line)
+        LOGGER.info(repaired_line)
+        editor.replace_range((line_no, line_no + 1), [repaired_line])
     return (line_no, 0)
 
 
-def bad_continuation(*_):
+def bad_continuation(editor, item):
     """ Pylint method to fix bad-continuation error """
-    pass
+    line_no = item.line_no
+    error_text = editor.lines[line_no]
+    CONTINUATION = re.compile("""
+        ^
+        Wrong\scontinued\sindentation\s
+        \(
+        (?P<verb>.*?)
+        \s(?P<count>\d+)\s+spaces
+        \)\.
+        $
+    """, re.VERBOSE)
+    m = CONTINUATION.match(item.desc)
+    if m:
+        g = m.groupdict()
+        verb, count = g["verb"], int(g["count"])
+        if count < 16:
+            repaired_line = (
+                error_text[count:] if verb == "remove"
+                else (" " * count) + error_text
+            )
+            editor.replace_range((line_no, line_no + 1), [repaired_line])
+    return (line_no, 0)
 
 
 def trailing_newline(editor, item):
@@ -138,6 +255,7 @@ def trailing_newline(editor, item):
         len(editor.lines)
     )
     editor.delete_range(loc)
+    return (line_no, loc[1] - loc[0])
 
 
 def no_self_use(editor, item):
@@ -149,16 +267,19 @@ def no_self_use(editor, item):
     indent, _ = get_indent(error_text)
     editor.lines[line_no] = error_text.replace("self, ", "").replace("(self)", "()")
     editor.insert_range(line_no, ["{0}@staticmethod".format(indent)])
+    return (line_no, 1)
 
 
-def no_value_for_parameter(*_):
+def no_value_for_parameter(editor, item):
     """ Pylint method to fix no_value_for_parameter error """
-    pass
+    line_no = item.line_no
+    return (line_no, 0)
 
 
-def superfluous_parens(*_):
+def superfluous_parens(editor, item):
     """ Pylint method to fix superfluous_parens error """
-    pass
+    line_no = item.line_no
+    return (line_no, 0)
 
 
 def missing_docstring(editor, item):
@@ -185,11 +306,13 @@ def missing_docstring(editor, item):
             # in reasonable time, give up.
             return
     func(line_no, [docstring])
+    return (line_no, 1)
 
 
-def invalid_name(*_):
+def invalid_name(editor, item):
     """ Pylint method to fix invalid_name error """
-    pass
+    line_no = item.line_no
+    return (line_no, 0)
 
 
 def unused_import(editor, item):
@@ -211,9 +334,10 @@ def unused_import(editor, item):
     return (line_no, 0)
 
 
-def misplaced_comparison_constant(*_):
+def misplaced_comparison_constant(editor, item):
     """ Pylint method to fix misplaced_comparison_constant error """
-    pass
+    line_no = item.line_no
+    return (line_no, 0)
 
 
 def len_as_condition(editor, item):
@@ -238,19 +362,74 @@ def len_as_condition(editor, item):
             repaired_line = fmt.format(**match.groupdict())
             loc = (line_no, line_no + 1)
             editor.replace_range(loc, [repaired_line])
+    return (line_no, 0)
 
 
-def  trailing_whitespace(editor, item):
+def trailing_whitespace(editor, item):
     """ Pylint method to fix trailing-whitespace error """
     line_no = item.line_no
     repaired_line = editor.lines[line_no].rstrip()
     loc = (line_no, line_no + 1)
     editor.replace_range(loc, [repaired_line])
+    return (line_no, 0)
 
 
-def ungrouped_imports(*_):
+def ungrouped_imports(editor, item):
     """ Pylint ungrouped-imports method """
-    pass
+    line_no = item.line_no
+    return (line_no, 0)
+
+
+def unused_argument(editor, item):
+    """ Pylint unused-argument method """
+    line_no = item.line_no
+    error_text = editor.lines[line_no]
+    LOGGER.info("unused argument: {0}".format(error_text))
+    return (line_no, 0)
+
+
+def unused_variable(editor, item):
+    """ Pylint unused-variable method """
+    unused_re = re.compile(r"Unused variable '(?P<unused>.*)'")
+    line_no = item.line_no
+    error_text = editor.lines[line_no]
+    m = unused_re.search(item.desc)
+    unused_var = r"\b{0[unused]}\b".format(m.groupdict())
+    repaired_line = re.sub(unused_var, '_', error_text, count=1)
+    loc = (line_no, line_no + 1)
+    editor.replace_range(loc, [repaired_line])
+    return (line_no, 0)
+
+
+def wrong_import_order(editor, item):
+    """ Pylint wrong_import_order method """
+    line_no = item.line_no
+    m = STD_IMPORT.match(item.desc)
+    if m:
+        g = m.groupdict()
+        before, after = (
+            re.compile("^{0}$".format(g[key]))
+            for key in ("before", "after")
+        )
+        before_matches = list(editor.find_line(before))
+        after_matches = list(editor.find_line(after))
+        if len(before_matches) == 1 and len(after_matches) == 1:
+            i, _ = before_matches[0]
+            j, _ = after_matches[0]
+            if i > j:
+                # This case would not be true if a previous item
+                # caused the order to be altered.
+                line_nos = [i] + list(range(j + 1, i)) + [j]
+                new_lines = [editor.lines[x] for x in line_nos]
+                loc = (j, i + 1)
+                assert len(new_lines) == (i + 1 - j)
+                count_before = len(editor.lines)
+                editor.replace_range(loc, new_lines)
+                count_after = len(editor.lines)
+                assert count_before == count_after
+            else:
+                LOGGER.info("Wrong import ordering already fixed")
+    return (line_no, 0)
 
 
 def anomalous_backslash_in_string(editor, item):
@@ -264,11 +443,28 @@ def anomalous_backslash_in_string(editor, item):
         editor.replace_range(loc, [repaired_line])
     else:
         LOGGER.info("Can't find anomalous string: '{0}'".format(src))
+    return (line_no, 0)
+
+def line_too_long(editor, item):
+    line_no = item.line_no
+    error_text = editor.lines[line_no]
+    new_lines = line_split(error_text, 100)
+    if not new_lines:
+        LOGGER.info("Could not split: {0}".format(error_text))
+        return (line_no, 0)
+    else:
+        assert isinstance(new_lines, list), new_lines
+        assert all(isinstance(s, str) for s in new_lines)
+        x = len(new_lines)
+        editor.replace_range((line_no, line_no + 1), new_lines)
+        return (line_no, x - 1)
 
 
-def no_op(*_):
+def no_op(_, item):
     """ Pylint no-op method """
-    pass
+    line_no = item.line_no
+    LOGGER.info("{0} goes to no-op".format(item.desc))
+    return (line_no, 0)
 
 
 FN_TABLE = {
@@ -277,6 +473,7 @@ FN_TABLE = {
     "bad-whitespace": bad_whitespace,
     "invalid-name": invalid_name,
     "len-as-condition": len_as_condition,
+    "line-too-long": line_too_long,
     "misplaced-comparison-constant": misplaced_comparison_constant,
     "missing-docstring": missing_docstring,
     "no-self-use": no_self_use,
@@ -284,9 +481,13 @@ FN_TABLE = {
     "superfluous-parens": superfluous_parens,
     "trailing-newline": trailing_newline,
     "trailing-whitespace": trailing_whitespace,
-    "unused-import": unused_import,
     "ungrouped-imports": ungrouped_imports,
+    "unused-argument": unused_argument,
+    "unused-import": unused_import,
+    "unused-variable": unused_variable,
+    "wrong-import-order": wrong_import_order,
 }
+
 
 # pylint: disable=too-few-public-methods
 # StreamEditor class has a minimal interface that a derived
@@ -301,15 +502,36 @@ class StreamEditorAutoPylint(StreamEditor):
     """
     table = [
         [[MODULE_NAME, NEXT], ],
-        [[PYLINT_ITEM, REPEAT], [MODULE_NAME, CUT], ],
+        [[PYLINT_ITEM, REPEAT], [MODULE_NAME, CUT], [PYLINT_SEMI_ITEM, NEXT], ],
+        [[ANY, NEXT], ],
+        [[PYLINT_ERROR_ITEM, 1], [ANY, 1], ],
     ]
 
     def apply_match(self, _, dict_matches):
         """
         Implement the `apply_match` method to the file.
         """
-        LOGGER.debug(dict_matches)
         matches = dict_matches["matches"]
+
+        # Because there can be complete matches and multiple lines which together
+        # make up a match, we have to find them and glue them together. Also,
+        # drop the fragments that have been glued on.
+        deletes = set()
+        lens = map(len, matches)
+        LOGGER.info(lens)
+        indexes = [i for i, l in enumerate(lens) if l == 5]
+        for index in indexes:
+            LOGGER.info(index)
+            assert lens[index:index + 3] == [5, 1, 2], lens[index:index + 3]
+            first, last = matches[index], matches[index + 2]
+            assert 'error' in last, last
+            assert 'error' not in first, first
+            first['error'] = last['error']
+            deletes.update([index + 1, index + 2])
+
+        matches = [m for n, m in enumerate(matches) if n not in deletes]
+        assert all(len(m) == 6 for m in matches[1:]), matches[1:]
+        assert all("error" in m for m in matches[1:]), matches[1:]
         module, items = matches[0], [item_maker(m) for m in matches[1:] if "error" in m]
 
         filename = module["filename"].replace('.', '/') + ".py"
