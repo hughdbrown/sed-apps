@@ -59,6 +59,20 @@ def item_maker(match):
         match["error"]
     )
 
+
+def find_string(s):
+    result = next((i, c) for i, c in enumerate(s) if c in ('"', "'"))
+    if result is not None:
+        start, quote_char = result
+        end = next(
+            i for i, c in enumerate(s[start + 1: ])
+            if c == quote_char and s[i - 1] != '\\'
+        )
+        if end is not None:
+            return (start, start + end + 1)
+    return None, None
+
+
 class DerivedStreamEditor(StreamEditor):
     """
     Simple derived class to allow simple stream-editing.
@@ -97,6 +111,19 @@ def bad_whitespace(editor, item):
 def bad_continuation(*_):
     """ Pylint method to fix bad-continuation error """
     pass
+
+
+def trailing_newline(editor, item):
+    """ Pylint method to fix trailing-newline error """
+    line_no = item.line_no
+    loc = (
+        next(
+            x for x in reversed(range(line_no, len(editor.lines)))
+             if not re.match(r'^\s*$', editor.lines[x])
+        ) or line_no,
+        len(editor.lines)
+    )
+    editor.delete_range(loc)
 
 
 def no_self_use(editor, item):
@@ -198,6 +225,19 @@ def ungrouped_imports(*_):
     pass
 
 
+def anomalous_backslash_in_string(editor, item):
+    """ Pylint anomalous-backslash-in-string method """
+    line_no = item.line_no
+    src = editor.lines[line_no]
+    start, end = find_string(src)
+    if (start, end) != (None, None):
+        repaired_line = src[:start] + 'r' + src[start:]
+        loc = (line_no, line_no + 1)
+        editor.replace_range(loc, [repaired_line])
+    else:
+        LOGGER.info("Can't find anomalous string: '{0}'".format(src))
+
+
 def no_op(*_):
     """ Pylint no-op method """
     pass
@@ -216,6 +256,8 @@ FN_TABLE = {
     "len-as-condition": len_as_condition,
     "trailing-whitespace": trailing_whitespace,
     "ungrouped-imports": ungrouped_imports,
+    "trailing-newline": trailing_newline,
+    "anomalous-backslash-in-string": anomalous_backslash_in_string,
 }
 
 # pylint: disable=too-few-public-methods
