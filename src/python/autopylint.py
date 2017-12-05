@@ -260,20 +260,20 @@ def no_op(*_):
 
 
 FN_TABLE = {
-    "no-self-use": no_self_use,
-    "missing-docstring": missing_docstring,
-    "superfluous-parens": superfluous_parens,
-    "invalid-name": invalid_name,
-    "unused-import": unused_import,
-    "misplaced-comparison-constant": misplaced_comparison_constant,
-    "no-value-for-parameter": no_value_for_parameter,
-    "bad-whitespace": bad_whitespace,
-    "bad-continuation": bad_continuation,
-    "len-as-condition": len_as_condition,
-    "trailing-whitespace": trailing_whitespace,
-    "ungrouped-imports": ungrouped_imports,
-    "trailing-newline": trailing_newline,
     "anomalous-backslash-in-string": anomalous_backslash_in_string,
+    "bad-continuation": bad_continuation,
+    "bad-whitespace": bad_whitespace,
+    "invalid-name": invalid_name,
+    "len-as-condition": len_as_condition,
+    "misplaced-comparison-constant": misplaced_comparison_constant,
+    "missing-docstring": missing_docstring,
+    "no-self-use": no_self_use,
+    "no-value-for-parameter": no_value_for_parameter,
+    "superfluous-parens": superfluous_parens,
+    "trailing-newline": trailing_newline,
+    "trailing-whitespace": trailing_whitespace,
+    "unused-import": unused_import,
+    "ungrouped-imports": ungrouped_imports,
 }
 
 # pylint: disable=too-few-public-methods
