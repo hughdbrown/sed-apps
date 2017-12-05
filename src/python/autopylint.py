@@ -10,7 +10,7 @@ import os.path
 import sys
 import re
 import logging
-from collections import namedtuple
+from collections import namedtuple, Counter
 from operator import attrgetter
 
 from sed.engine import (
@@ -23,6 +23,15 @@ MODULE_NAME = re.compile(r"""
     ^\*+\s
     Module\s+
     (?P<filename>[\w\d\._-]+)
+    $
+""", re.VERBOSE)
+
+FROM_IMP = re.compile(r"""
+    ^
+    from
+    \s+(?P<library>[\w\d_\.]+)
+    \s+import
+    \s+(?P<imports>[\w\d_\.,\s]+)
     $
 """, re.VERBOSE)
 
@@ -183,10 +192,7 @@ def unused_import(editor, item):
     line_no = item.line_no
     error_text = editor.lines[line_no]
     remove = item.desc.split(' ')[1]
-    from_imp = re.compile(
-        r"^from (?P<library>[\w\d_\.]+) import (?P<imports>[\w\d_\.,\s]+)"
-    )
-    m = from_imp.match(error_text)
+    m = FROM_IMP.match(error_text)
     if m:
         groups = m.groupdict()
         library = groups["library"]
@@ -197,6 +203,7 @@ def unused_import(editor, item):
         )
         loc = (line_no, line_no + 1)
         editor.replace_range(loc, [repaired_line])
+    return (line_no, 0)
 
 
 def misplaced_comparison_constant(*_):
@@ -309,6 +316,7 @@ class StreamEditorAutoPylint(StreamEditor):
         """ Fix all pylint errors that have a matching function """
         LOGGER.info("Creating StreamEditor for {0}".format(filename))
 
+        affected = Counter()
         if not os.path.exists(filename):
             tmp_filename = os.path.join(filename[:-3], "__init__.py")
             if os.path.exists(tmp_filename):
@@ -317,9 +325,25 @@ class StreamEditorAutoPylint(StreamEditor):
         try:
             editor = DerivedStreamEditor(filename, options=EditorOptions())
             for item in sorted(items, reverse=True, key=lambda x: x.line_no):
-                LOGGER.info("Error is {0}".format(item.error))
+                LOGGER.info("Error at {1} is {0}".format(item.error, item.line_no))
                 func = FN_TABLE.get(item.error, no_op)
-                func(editor, item)
+
+                # Previous changes to the text may have shifted the line
+                # number of the current error. Track these changes and apply
+                # a patch when the problem is detected.
+                distance = sum(v for k, v in affected.items() if k <= item.line_no)
+                if distance:
+                    item = Item(
+                        item.type,
+                        item.line_no + distance,
+                        item.line_offset,
+                        item.desc,
+                        item.error
+                    )
+
+                line_no, count = func(editor, item)
+                if count:
+                    affected[line_no] += count
             editor.save()
         except IOError:
             LOGGER.exception("fix_pylint({0})".format(filename))
