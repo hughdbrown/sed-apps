@@ -122,9 +122,10 @@ def bad_whitespace(editor, item):
     return (line_no, 0)
 
 
-def bad_continuation(*_):
+def bad_continuation(editor, item):
     """ Pylint method to fix bad-continuation error """
-    pass
+    line_no = item.line_no
+    return (line_no, 0)
 
 
 def trailing_newline(editor, item):
@@ -138,6 +139,7 @@ def trailing_newline(editor, item):
         len(editor.lines)
     )
     editor.delete_range(loc)
+    return (line_no, loc[1] - loc[0])
 
 
 def no_self_use(editor, item):
@@ -149,16 +151,19 @@ def no_self_use(editor, item):
     indent, _ = get_indent(error_text)
     editor.lines[line_no] = error_text.replace("self, ", "").replace("(self)", "()")
     editor.insert_range(line_no, ["{0}@staticmethod".format(indent)])
+    return (line_no, 1)
 
 
-def no_value_for_parameter(*_):
+def no_value_for_parameter(editor, item):
     """ Pylint method to fix no_value_for_parameter error """
-    pass
+    line_no = item.line_no
+    return (line_no, 0)
 
 
-def superfluous_parens(*_):
+def superfluous_parens(editor, item):
     """ Pylint method to fix superfluous_parens error """
-    pass
+    line_no = item.line_no
+    return (line_no, 0)
 
 
 def missing_docstring(editor, item):
@@ -185,11 +190,13 @@ def missing_docstring(editor, item):
             # in reasonable time, give up.
             return
     func(line_no, [docstring])
+    return (line_no, 1)
 
 
-def invalid_name(*_):
+def invalid_name(editor, item):
     """ Pylint method to fix invalid_name error """
-    pass
+    line_no = item.line_no
+    return (line_no, 0)
 
 
 def unused_import(editor, item):
@@ -211,9 +218,10 @@ def unused_import(editor, item):
     return (line_no, 0)
 
 
-def misplaced_comparison_constant(*_):
+def misplaced_comparison_constant(editor, item):
     """ Pylint method to fix misplaced_comparison_constant error """
-    pass
+    line_no = item.line_no
+    return (line_no, 0)
 
 
 def len_as_condition(editor, item):
@@ -238,6 +246,7 @@ def len_as_condition(editor, item):
             repaired_line = fmt.format(**match.groupdict())
             loc = (line_no, line_no + 1)
             editor.replace_range(loc, [repaired_line])
+    return (line_no, 0)
 
 
 def  trailing_whitespace(editor, item):
@@ -246,11 +255,13 @@ def  trailing_whitespace(editor, item):
     repaired_line = editor.lines[line_no].rstrip()
     loc = (line_no, line_no + 1)
     editor.replace_range(loc, [repaired_line])
+    return (line_no, 0)
 
 
-def ungrouped_imports(*_):
+def ungrouped_imports(editor, item):
     """ Pylint ungrouped-imports method """
-    pass
+    line_no = item.line_no
+    return (line_no, 0)
 
 
 def anomalous_backslash_in_string(editor, item):
@@ -264,11 +275,14 @@ def anomalous_backslash_in_string(editor, item):
         editor.replace_range(loc, [repaired_line])
     else:
         LOGGER.info("Can't find anomalous string: '{0}'".format(src))
+    return (line_no, 0)
 
 
-def no_op(*_):
+def no_op(_, item):
     """ Pylint no-op method """
-    pass
+    line_no = item.line_no
+    LOGGER.info("{0} goes to no-op".format(item.desc))
+    return (line_no, 0)
 
 
 FN_TABLE = {
