@@ -218,6 +218,7 @@ class DerivedStreamEditor(StreamEditor):
         """ Required method for StreamEditor """
         pass
 
+
 class EditorOptions(object):
     """ Hack: make an object to initialize StreamEditor """
     def __init__(self):
