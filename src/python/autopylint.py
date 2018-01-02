@@ -335,26 +335,26 @@ def missing_docstring(editor, item):
     line_no = item.line_no
     error_text = editor.lines[line_no]
     indent, rest = get_indent(error_text)
-    if not rest.startswith(("def ", "class ")):
+    new_indent = indent + "    "
+
+    if rest.startswith("def "):
+        func = editor.append_range
+        docstring = '{0}""" Pro forma function/method docstring """'.format(new_indent)
+        i = end_of_function_def(editor, line_no)
+    elif rest.startswith("class "):
+        func = editor.append_range
+        docstring = '{0}""" Pro forma class docstring """'.format(new_indent)
+        i = line_no
+    else:
+        # Missing docstring is at module scope
         func = editor.insert_range
         docstring = '""" Pro forma module docstring """'
-    else:
-        func = editor.append_range
-        fmt = (
-            '{0}""" Pro forma function/method docstring """' if rest.startswith("def ")
-            else '{0}""" Pro forma class docstring """'
-        )
-        docstring = fmt.format(indent + "    ")
-        for x in range(10):
-            if "):" in editor.lines[line_no + x]:
-                line_no += x
-                break
-        else:
-            # If we cannot find where a function/class definition ends
-            # in reasonable time, give up.
-            return
-    func(line_no, [docstring])
-    return (line_no, 1)
+        i = line_no
+
+    rep = i is not None
+    if rep:
+        func(i, [docstring])
+    return (line_no, int(rep))
 
 
 def invalid_name(editor, item):
