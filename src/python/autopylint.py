@@ -183,7 +183,6 @@ def line_split(s, length):
                 for k in """()[]{}"'"""
             })
             counts = remove_negative_counts(counts)
-            commas = get_counts(s, ',')
 
             cv = [a for a in counts.values() if a]
             if cv:
