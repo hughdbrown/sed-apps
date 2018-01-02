@@ -96,6 +96,32 @@ IF_STMT = re.compile(r"""
 """, re.VERBOSE)
 
 
+CONTINUATION = re.compile("""
+    ^
+    Wrong\scontinued\sindentation\s
+    \(
+    (?P<verb>.*?)
+    \s(?P<count>\d+)\s+spaces
+    \)
+    \.
+    $
+""", re.VERBOSE)
+
+
+HANGING = re.compile("""
+    ^
+    Wrong\shanging\sindentation\s
+    (
+        \(
+        (?P<verb>.*?)
+        \s(?P<count>\d+)\s+spaces
+        \)
+    )?
+    \.
+    $
+""", re.VERBOSE)
+
+
 # pylint: disable=logging-format-interpolation
 logging.basicConfig(level=logging.DEBUG)
 LOGGER = logging.getLogger(__name__)
@@ -223,25 +249,18 @@ def bad_continuation(editor, item):
     """ Pylint method to fix bad-continuation error """
     line_no = item.line_no
     error_text = editor.lines[line_no]
-    CONTINUATION = re.compile("""
-        ^
-        Wrong\scontinued\sindentation\s
-        \(
-        (?P<verb>.*?)
-        \s(?P<count>\d+)\s+spaces
-        \)\.
-        $
-    """, re.VERBOSE)
-    m = CONTINUATION.match(item.desc)
+    m = CONTINUATION.match(item.desc) or HANGING.match(item.desc)
     if m:
         g = m.groupdict()
-        verb, count = g["verb"], int(g["count"])
-        if count < 16:
+        verb, count = g.get("verb"), int(g.get("count"))
+        if verb and count < 16:
             repaired_line = (
-                error_text[count:] if verb == "remove"
-                else (" " * count) + error_text
+                error_text[count:] if verb == "remove" else
+                ((" " * count) + error_text if verb == "add"
+                else None)
             )
-            editor.replace_range((line_no, line_no + 1), [repaired_line])
+            if repaired_line is not None:
+                editor.replace_range((line_no, line_no + 1), [repaired_line])
     return (line_no, 0)
 
 
