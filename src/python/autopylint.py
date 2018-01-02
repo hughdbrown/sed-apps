@@ -128,15 +128,21 @@ LOGGER = logging.getLogger(__name__)
 
 
 Item = namedtuple("Item", ["type", "line_no", "line_offset", "desc", "error"])
+
+
+def item_assert(item):
+    assert isinstance(item.type, str)
+    assert isinstance(item.desc, str)
+    assert isinstance(item.error, str)
+    assert isinstance(item.line_no, int)
+    assert isinstance(item.line_offset, int)
+    assert item.desc
+    assert item.type
+    assert item.error
+
+
 def item_maker(match):
     """ Helper function for making an Item from a dict """
-    assert "type" in match
-    assert "where1" in match
-    assert "where2" in match
-    assert "desc" in match
-    assert "error" in match
-    assert isinstance(match["desc"], str)
-    assert isinstance(match["error"], str)
     return Item(
         match["type"],
         int(match["where1"]) - 1,
@@ -311,6 +317,7 @@ def superfluous_parens(editor, item):
 
 def missing_docstring(editor, item):
     """ Pylint method to fix missing_docstring error """
+    item_assert(item)
     line_no = item.line_no
     error_text = editor.lines[line_no]
     indent, rest = get_indent(error_text)
@@ -491,7 +498,7 @@ def line_too_long(editor, item):
 def no_op(_, item):
     """ Pylint no-op method """
     line_no = item.line_no
-    LOGGER.info("{0} goes to no-op".format(item.desc))
+    LOGGER.info("'{0}' --> no-op".format(item.desc))
     return (line_no, 0)
 
 
@@ -601,6 +608,7 @@ class StreamEditorAutoPylint(StreamEditor):
         """
         Implement the `apply_match` method to the file.
         """
+        from pprint import pprint
         matches = dict_matches["matches"]
 
         # Because there can be complete matches and multiple lines which together
@@ -612,7 +620,12 @@ class StreamEditorAutoPylint(StreamEditor):
         indexes = [i for i, l in enumerate(lens) if l == 5]
         for index in indexes:
             LOGGER.info(index)
-            assert lens[index:index + 3] == [5, 1, 2], lens[index:index + 3]
+            sl = slice(index, index + 3)
+            if matches[index].get("desc", "").startswith("Wrong hanging indentation"):
+                pprint(sl)
+                pprint(lens[sl])
+                pprint(matches[sl])
+            assert lens[sl] == [5, 1, 2]
             first, last = matches[index], matches[index + 2]
             assert 'error' in last, last
             assert 'error' not in first, first
@@ -623,6 +636,8 @@ class StreamEditorAutoPylint(StreamEditor):
         assert all(len(m) == 6 for m in matches[1:]), matches[1:]
         assert all("error" in m for m in matches[1:]), matches[1:]
         module, items = matches[0], [item_maker(m) for m in matches[1:] if "error" in m]
+        for item in items:
+            item_assert(item)
 
         filename = module["filename"].replace('.', '/') + ".py"
         keyfn = attrgetter('line_no')
@@ -642,8 +657,9 @@ class StreamEditorAutoPylint(StreamEditor):
         try:
             editor = DerivedStreamEditor(filename, options=EditorOptions())
             for item in sorted(items, reverse=True, key=lambda x: x.line_no):
-                LOGGER.info("Error at {1} is {0}".format(item.error, item.line_no))
+                LOGGER.info("----- Error at {1} is {0}".format(item.error, item.line_no))
                 func = FN_TABLE.get(item.error, no_op)
+                assert func, "{0} does not map to a function?".format(item.error)
 
                 # Previous changes to the text may have shifted the line
                 # number of the current error. Track these changes and apply
@@ -657,10 +673,16 @@ class StreamEditorAutoPylint(StreamEditor):
                         item.desc,
                         item.error
                     )
+                item_assert(item)
 
+                assert editor, "editor is None"
+                assert item, "item is None"
+                LOGGER.info("Invoking {0}".format(func.__name__))
+                LOGGER.debug("Before count = {0}".format(len(editor.lines)))
                 line_no, count = func(editor, item)
                 if count:
                     affected[line_no] += count
+                LOGGER.debug("After count = {0}".format(len(editor.lines)))
             editor.save()
         except IOError:
             LOGGER.exception("fix_pylint({0})".format(filename))
