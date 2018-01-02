@@ -11,7 +11,7 @@ def reqs_from_file(filename):
 
 setup(
     name='sed-apps',
-    version='0.1.2',
+    version='0.1.3',
     description='Suite of tools that use sed-engine',
     author='Hugh Brown',
     author_email='hughdbrown@yahoo.com',
