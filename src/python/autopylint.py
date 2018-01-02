@@ -152,6 +152,20 @@ def item_maker(match):
     )
 
 
+def end_of_function_def(editor, start_line):
+    for i in range(start_line, len(editor.lines)):
+        if editor.lines[i].endswith("):"):
+            return i
+    return None
+
+
+def end_of_string_doc(editor, start_line):
+    for i in range(start_line, len(editor.lines)):
+        if editor.lines[i].endswith(('"""', "'''")):
+            return i
+    return None
+
+
 def get_indent(src):
     """ Helper function to get the leading whitespace from a line """
     match = re.match(r"^(\s*)(.*)$", src)
@@ -500,20 +514,6 @@ def no_op(_, item):
     line_no = item.line_no
     LOGGER.info("'{0}' --> no-op".format(item.desc))
     return (line_no, 0)
-
-
-def end_of_function_def(editor, start_line):
-    for i in range(start_line, len(editor.lines)):
-        if editor.lines[i].endswith("):"):
-            return i
-    return None
-
-
-def end_of_string_doc(editor, start_line):
-    for i in range(start_line, len(editor.lines)):
-        if editor.lines[i].endswith(('"""', "'''")):
-            return i
-    return None
 
 
 def dangerous_default_value(editor, item):
