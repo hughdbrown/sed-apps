@@ -445,6 +445,7 @@ def anomalous_backslash_in_string(editor, item):
         LOGGER.info("Can't find anomalous string: '{0}'".format(src))
     return (line_no, 0)
 
+
 def line_too_long(editor, item):
     line_no = item.line_no
     error_text = editor.lines[line_no]
@@ -467,6 +468,67 @@ def no_op(_, item):
     return (line_no, 0)
 
 
+def end_of_function_def(editor, start_line):
+    for i in range(start_line, len(editor.lines)):
+        if editor.lines[i].endswith("):"):
+            return i
+    return None
+
+
+def end_of_string_doc(editor, start_line):
+    for i in range(start_line, len(editor.lines)):
+        if editor.lines[i].endswith(('"""', "'''")):
+            return i
+    return None
+
+
+def dangerous_default_value(editor, item):
+    """
+    Pylint dangerous-default-value method
+    GIVEN a line that has a mutable default argument
+    THEN change the argument to None and add a line that converts a None argument
+    to the required empty type.
+    """
+    line_no = item.line_no
+    error_text = editor.lines[line_no]
+    regex = r'Dangerous default value (?P<default_arg>.*?) as argument'
+    m = re.match(regex, item.desc)
+    if m:
+        default_arg = m.groupdict()["default_arg"]
+        regex = r'^.*(?P<arg_name>[\w\d_]+)(?P<spacing>\s*=\s*){0}.*$'.format(default_arg)
+        m = re.match(regex, error_text)
+        assert m, "No match on arg_name"
+
+        # Set the variable correctly in the function scope
+        # Skip to the end of the function def
+        # Skip the string doc if present
+        i = end_of_function_def(editor, line_no)
+        if (i is not None) and editor.lines[i + 1].lstrip().startswith(('"""', "'''")):
+            j = end_of_string_doc(editor, i + 1)
+            i = i if j is None else j
+
+        if m and (i is not None):
+            g = m.groupdict()
+            arg_name, spacing = tuple(g[arg] for arg in ("arg_name", "spacing"))
+
+            # Fix the declaration in the function's argument list
+            pattern = arg_name + spacing + default_arg
+            repl = arg_name + "=None"
+            new_decl = error_text.replace(pattern, repl)
+
+            # Assign the default argument if the arg is None
+            # HACK: should not assume that function is indented only 4 spaces
+            spacing = "    "
+            new_assign = "{0}{1} = {1} or {2}".format(spacing, arg_name, default_arg)
+
+            # Perform multiple changes atomically
+            editor.replace_range((line_no, line_no + 1), [new_decl])
+            editor.append_range(i, [new_assign])
+            return (i, 1)
+
+    return (line_no, 0)
+
+
 FN_TABLE = {
     "anomalous-backslash-in-string": anomalous_backslash_in_string,
     "bad-continuation": bad_continuation,
@@ -486,6 +548,7 @@ FN_TABLE = {
     "unused-import": unused_import,
     "unused-variable": unused_variable,
     "wrong-import-order": wrong_import_order,
+    "dangerous-default-value": dangerous_default_value,
 }
 
 
