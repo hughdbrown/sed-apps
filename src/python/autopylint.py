@@ -130,6 +130,13 @@ LOGGER = logging.getLogger(__name__)
 Item = namedtuple("Item", ["type", "line_no", "line_offset", "desc", "error"])
 def item_maker(match):
     """ Helper function for making an Item from a dict """
+    assert "type" in match
+    assert "where1" in match
+    assert "where2" in match
+    assert "desc" in match
+    assert "error" in match
+    assert isinstance(match["desc"], str)
+    assert isinstance(match["error"], str)
     return Item(
         match["type"],
         int(match["where1"]) - 1,
