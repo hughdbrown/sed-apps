@@ -152,7 +152,16 @@ def item_maker(match):
     )
 
 
+def start_of_function_def(editor, start_line):
+    """ Find where a function starts, beginning with `start_line` and working backward """
+    for i in reversed(range(start_line + 1)):
+        if editor.lines[i].lstrip().startswith("def "):
+            return i
+    return None
+
+
 def end_of_function_def(editor, start_line):
+    """ Find where a function ends, beginning with `start_line` and working forward """
     for i in range(start_line, len(editor.lines)):
         if editor.lines[i].endswith("):"):
             return i
@@ -160,6 +169,7 @@ def end_of_function_def(editor, start_line):
 
 
 def end_of_string_doc(editor, start_line):
+    """ Find where a docstring ends, beginning with `start_line` and working forward """
     for i in range(start_line, len(editor.lines)):
         if editor.lines[i].endswith(('"""', "'''")):
             return i
@@ -311,10 +321,11 @@ def no_self_use(editor, item):
     LOGGER.info("no_self_use: {0}".format(line_no))
     error_text = editor.lines[line_no]
     LOGGER.info(error_text)
-    indent, _ = get_indent(error_text)
+    decorator_line_no = start_of_function_def(editor, line_no)
+    indent, _ = get_indent(editor.lines[decorator_line_no])
     editor.lines[line_no] = error_text.replace("self, ", "").replace("(self)", "()")
-    editor.insert_range(line_no, ["{0}@staticmethod".format(indent)])
-    return (line_no, 1)
+    editor.insert_range(decorator_line_no, ["{0}@staticmethod".format(indent)])
+    return (decorator_line_no, 1)
 
 
 def no_value_for_parameter(editor, item):
