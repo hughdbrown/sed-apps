@@ -598,6 +598,26 @@ def no_op(_, item):
     return (line_no, 0)
 
 
+def relative_import(editor, item):
+    """
+    Pylint relative-import method
+    GIVEN a line that has a relative import in error
+    THEN change the line to have a correct relative import
+    """
+    line_no = item.line_no
+    error_text = editor.lines[line_no]
+    regex = r"Relative import '(?P<actual>[\w\d\._]+)', should be '(?P<desired>[\w\d\._]+)'"
+    m = re.match(regex, item.desc)
+    if m:
+        g = m.groupdict()
+        actual, desired = g["actual"], g["desired"]
+        regex = r"^(.*){0}".format(actual)
+        repl = r"\1{0}".format(desired)
+        repaired_line = re.sub(regex, repl, error_text)
+        editor.replace_range((line_no, line_no + 1), [repaired_line])
+    return (line_no, 0)
+
+
 def dangerous_default_value(editor, item):
     """
     Pylint dangerous-default-value method
@@ -656,6 +676,7 @@ FN_TABLE = {
     "missing-docstring": missing_docstring,
     "no-self-use": no_self_use,
     "no-value-for-parameter": no_value_for_parameter,
+    "relative-import": relative_import,
     "superfluous-parens": superfluous_parens,
     "trailing-newline": trailing_newline,
     "trailing-whitespace": trailing_whitespace,
