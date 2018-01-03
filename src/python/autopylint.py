@@ -307,7 +307,7 @@ def bad_continuation(editor, item):
     if m:
         g = m.groupdict()
         verb, count = g.get("verb"), int(g.get("count"))
-        if verb and count < 16:
+        if verb:
             repaired_line = (
                 error_text[count:] if verb == "remove" else
                 ((" " * count) + error_text if verb == "add"
@@ -315,6 +315,8 @@ def bad_continuation(editor, item):
             )
             if repaired_line is not None:
                 editor.replace_range((line_no, line_no + 1), [repaired_line])
+        else:
+            LOGGER.debug("Missing verb in 'bad_continuation': {0}".format(item.desc))
     return (line_no, 0)
 
 
