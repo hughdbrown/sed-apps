@@ -353,6 +353,8 @@ def bad_continuation(editor, item):
                 editor.replace_range((line_no, line_no + 1), [repaired_line])
         else:
             LOGGER.debug("Missing verb in 'bad_continuation': {0}".format(item.desc))
+    else:
+        LOGGER.debug("No match {1}: {0}".format(error_text, line_no))
     return (line_no, 0)
 
 
