@@ -262,23 +262,40 @@ def bad_whitespace(editor, item):
     """ Pylint method to fix bad-whitespace error """
     line_no = item.line_no
     error_text = editor.lines[line_no]
-    if item.desc == "No space allowed around keyword argument assignment":
-        repaired_line = re.sub(r"\s+=\s+", "=", error_text, count=1)
-    elif item.desc == "Exactly one space required after comma":
-        repaired_line = re.sub(r",\s*", ", ", error_text)
-    elif item.desc == "No space allowed after bracket":
-        repaired_line = re.sub(r"{\s+", "{", error_text)
-    elif item.desc == "No space allowed before bracket":
-        repaired_line = re.sub(r"\s+}", "}", error_text)
-    elif item.desc == "Exactly one space required around comparison":
-        repaired_line = re.sub(r"\s*==\s*", " == ", error_text)
-        repaired_line = re.sub(r"\s*!=\s*", " != ", repaired_line)
-    else:
-        LOGGER.info("No match on '{0}'".format(item.desc))
-        repaired_line = None
-    if repaired_line:
+    comparisons = "(>=|<=|>|<==|!=)"
+    table = {
+        "No space allowed around keyword argument assignment": [(r"\s+=\s+", "=")],
+        "Exactly one space required after comma": [(r",\s*", ", ")],
+        "No space allowed before :": [(r"\s+:", ":")],
+        "No space allowed before comma": [(r"\s+,", ",")],
+        "No space allowed after bracket": [(r"(\{|\[|\()\s+", r"\1")],
+        "No space allowed before bracket": [(r"\s+(\}|\]|\))", r"\1")],
+        "No space allowed around keyword argument assignment": [(r"([\w\d_]+)\s+=", r"\1")],
+        "Exactly one space required around comparison": [
+            (r"\s+{0}\s+".format(comparisons), r" \1 "),
+            (r"(\S+){0}\s+".format(comparisons), r"\1 \2 "),
+            (r"\s+{0}(\S+)".format(comparisons), r" \1 \2"),
+        ],
+        "Exactly one space required around assignment": [
+            (r"(\S+)=\s+", "\1 = "),
+            (r"\s+=(\S+)", " = \1"),
+            (r"\s+=\s+", " = "),
+        ],
+        "Exactly one space required after :": [
+            (r":\s+", ": "),
+            (r":(\S+)", r": \1"),
+        ],
+    }
+    x = table.get(item.desc)
+    if x:
+        repaired_line = error_text
+        for regex, repl in x:
+            repaired_line = re.sub(regex, repl, repaired_line, count=1)
         LOGGER.info(repaired_line)
         editor.replace_range((line_no, line_no + 1), [repaired_line])
+    else:
+        LOGGER.info("No match on '{0}'".format(item.desc))
+
     return (line_no, 0)
 
 
