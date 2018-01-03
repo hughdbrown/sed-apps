@@ -362,7 +362,7 @@ def trailing_newline(editor, item):
     loc = (
         next(
             x for x in reversed(range(line_no, len(editor.lines)))
-             if not re.match(r'^\s*$', editor.lines[x])
+            if not re.match(r'^\s*$', editor.lines[x])
         ) or line_no,
         len(editor.lines)
     )
