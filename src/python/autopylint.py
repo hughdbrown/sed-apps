@@ -434,26 +434,32 @@ def unused_import(editor, item):
     line_no = item.line_no
     error_text = editor.lines[line_no]
     remove = item.desc.split(' ')[1]
-    changes = 0
     m = FROM_IMP.match(error_text)
     if m:
         groups = m.groupdict()
         library = groups["library"]
         imports = [imp.strip() for imp in groups["imports"].split(',')]
+        LOGGER.debug("imports: {0}".format(imports))
+        LOGGER.debug("remove: {0}".format(remove))
         final_imports = set(imports) - set([remove])
-        loc = (line_no, line_no + 1)
-        if not imports:
+        LOGGER.debug("{0}: {1}".format(library, ", ".join(final_imports) or "<empty>"))
+        if not final_imports:
             # With the import removed, the line has no operative imports -- remove line
+            loc = (line_no, line_no)
+            LOGGER.debug("deleting: {0}".format(loc))
+            LOGGER.debug("0 <= {0} <= {1} <= {2}".format(loc[0], loc[1], len(editor.lines)))
             editor.delete_range(loc)
-            changes = -1
+            return (line_no + 1, -1)
         else:
             # Format a new line with the unused removed and the remaining imports sorted
             repaired_line = "from {0} import {1}".format(
                 library,
                 ", ".join(sorted(final_imports))
             )
+            loc = (line_no, line_no + 1)
             editor.replace_range(loc, [repaired_line])
-    return (line_no, changes)
+            return (line_no, 0)
+    return (line_no, 0)
 
 
 def misplaced_comparison_constant(editor, item):
