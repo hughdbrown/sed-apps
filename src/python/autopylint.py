@@ -54,7 +54,7 @@ PYLINT_ITEM = re.compile(r"""
     \s*
     (?P<where2>-?\d+):
     \s+
-    (?P<desc>[\w\d\s\.\(\)/]+?)
+    (?P<desc>[\w\d\s\.\(\)/',]+?)
     \s
     \(
     (?P<error>[\w_\.-]+?)
@@ -611,10 +611,12 @@ def relative_import(editor, item):
     if m:
         g = m.groupdict()
         actual, desired = g["actual"], g["desired"]
-        regex = r"^(.*){0}".format(actual)
+        regex = r"^(.*?){0}".format(actual)
         repl = r"\1{0}".format(desired)
         repaired_line = re.sub(regex, repl, error_text)
         editor.replace_range((line_no, line_no + 1), [repaired_line])
+    else:
+        LOGGER.debug("No match on regex in relative_import")
     return (line_no, 0)
 
 
