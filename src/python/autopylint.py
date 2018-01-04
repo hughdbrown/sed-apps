@@ -273,7 +273,7 @@ def bad_whitespace(editor, item):
             # (r":(\S+)", r": \1"),
         ],
         "Exactly one space required after comma": [
-            (r"(.*),\s*", r"\1, ", {}),
+            (r"(.*?),\s*", r"\1, ", {}),
         ],
         "Exactly one space required after comparison": [
             (r"(.*){0}\s*(\S+)".format(comparisons), r"\1\2 \3", {}),
