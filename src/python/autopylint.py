@@ -528,9 +528,12 @@ def unused_variable(editor, item):
     error_text = editor.lines[line_no]
     m = unused_re.search(item.desc)
     unused_var = r"\b{0[unused]}\b".format(m.groupdict())
-    repaired_line = re.sub(unused_var, '_', error_text, count=1)
-    loc = (line_no, line_no + 1)
-    editor.replace_range(loc, [repaired_line])
+    if re.match(r".*except.*as\s+{0}:".format(unused_var), error_text):
+        repaired_line = re.sub(r"\s+as+{0}".format(unused_var), "", error_text)
+    else:
+        repaired_line = re.sub(unused_var, '_', error_text, count=1)
+        loc = (line_no, line_no + 1)
+        editor.replace_range(loc, [repaired_line])
     return (line_no, 0)
 
 
