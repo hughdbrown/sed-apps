@@ -194,6 +194,8 @@ def line_split(s, length):
 
     if len(s) <= length:
         result = [s]
+    elif s.lstrip().startswith("#"):
+        result = [s]
     else:
         ind0, non_indent = get_indent(s)
         ind1 = ind0 + "    "
