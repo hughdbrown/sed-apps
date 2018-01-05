@@ -327,9 +327,10 @@ def bad_whitespace(editor, item):
         # Sometimes, these fixes add trailing whitespace to lines
         repaired_line = repaired_line.rstrip()
 
-        if repaired_line == error_text:
+        if error_text == repaired_line:
             LOGGER.debug("Bad whitespace repair: {0}".format(repaired_line))
-        LOGGER.info(repaired_line)
+            LOGGER.debug("Repair: {0}".format(item.desc))
+            LOGGER.debug("regex applied: {0}".format(x))
         editor.replace_range((line_no, line_no + 1), [repaired_line])
     else:
         LOGGER.info("No match on '{0}'".format(item.desc))
