@@ -784,11 +784,15 @@ class StreamEditorAutoPylint(StreamEditor):
                 assert editor, "editor is None"
                 assert item, "item is None"
                 LOGGER.info("Invoking {0}".format(func.__name__))
-                LOGGER.debug("Before count = {0}".format(len(editor.lines)))
+                before = len(editor.lines)
+                LOGGER.debug("Before count = {0}".format(before))
                 line_no, count = func(editor, item)
                 if count:
                     affected[line_no] += count
-                LOGGER.debug("After count = {0}".format(len(editor.lines)))
+                LOGGER.debug("line_no = {0}, count = {1}".format(line_no, count))
+                after = len(editor.lines)
+                LOGGER.debug("After count = {0}".format(after))
+                assert after == before + count
             editor.save()
         except IOError:
             LOGGER.exception("fix_pylint({0})".format(filename))
