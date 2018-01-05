@@ -719,7 +719,6 @@ class StreamEditorAutoPylint(StreamEditor):
         """
         Implement the `apply_match` method to the file.
         """
-        from pprint import pprint
         matches = dict_matches["matches"]
 
         # Because there can be complete matches and multiple lines which together
@@ -732,10 +731,6 @@ class StreamEditorAutoPylint(StreamEditor):
         for index in indexes:
             LOGGER.info(index)
             sl = slice(index, index + 3)
-            if matches[index].get("desc", "").startswith("Wrong hanging indentation"):
-                pprint(sl)
-                pprint(lens[sl])
-                pprint(matches[sl])
             assert lens[sl] == [5, 1, 2]
             first, last = matches[index], matches[index + 2]
             assert 'error' in last, last
