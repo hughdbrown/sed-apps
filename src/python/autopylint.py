@@ -283,7 +283,7 @@ def bad_whitespace(editor, item):
             # (r"(.*){0}(\S+)".format(comparisons), r"\1\2 \3", {}),
         ],
         "Exactly one space required around assignment": [
-            (r"(.*\S+)\s*=\s*(\S+)", r"\1 = \2", {'count': 1}),
+            (r"(.*\S+)\s*{0}\s*(\S+)".format(assignments), r"\1 \2 \3", {'count': 1}),
             # (r"(.*\S+)=\s+", r"\1 = ", {'count': 1}),
             # (r"(.*)\s+=(\S+)", r"\1 = \2", {'count': 1}),
             # (r"(.*)\s+=\s+", r"\1 = ", {'count': 1}),
