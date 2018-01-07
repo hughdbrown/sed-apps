@@ -20,6 +20,10 @@ class TestAutopylintRegex(object):
             ("h=  None", "h = None"),
             ("h  =None", "h = None"),
             ("h  =  None", "h = None"),
+            (
+                "p=[i for i in x if i.type == t]",
+                "p = [i for i in x if i.type == t]"
+            ),
         ]
     )
     def test_whitespace_assignment(self, src, expected):
