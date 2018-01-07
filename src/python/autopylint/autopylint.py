@@ -149,7 +149,7 @@ def line_split(s, length):
                 k: get_counts(s, k)
                 for k in """()[]{}"'"""
             })
-            counts = remove_negative_counts(counts)
+            # counts = remove_negative_counts(counts)
 
             cv = [a for a in counts.values() if a]
             if cv:
