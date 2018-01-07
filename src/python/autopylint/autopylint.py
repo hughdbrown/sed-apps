@@ -19,107 +19,19 @@ from sed.engine import (
     REPEAT, NEXT, CUT, ANY,
 )
 
-MODULE_NAME = re.compile(r"""
-    ^\*+\s
-    Module\s+
-    (?P<filename>[\w\d\._-]+)
-    $
-""", re.VERBOSE)
-
-STD_IMPORT = re.compile(r"""
-    ^
-    standard\simport\s
-    \"(?P<before>[^"]+)\"
-    \sshould\sbe\splaced\sbefore\s
-    \"(?P<after>[^"]+)\"
-    $
-""", re.VERBOSE)
-
-FROM_IMP = re.compile(r"""
-    ^
-    from
-    \s+(?P<library>[\w\d_\.]+)
-    \s+import
-    \s+(?P<imports>[\w\d_\.,\s]+)
-    $
-""", re.VERBOSE)
-
-#C: 75, 0: Unnecessary parens after 'print' keyword (superfluous-parens)
-#C: 14, 0: Too many lines in module (6953/1000) (too-many-lines)
-PYLINT_ITEM = re.compile(r"""
-    ^
-    (?P<type>[ERCW]):
-    \s*
-    (?P<where1>\d+),
-    \s*
-    (?P<where2>-?\d+):
-    \s+
-    (?P<desc>[\w\d\s\.\(\)/',]+?)
-    \s
-    \(
-    (?P<error>[\w_\.-]+?)
-    \)
-    $
-""", re.VERBOSE)
-
-
-# Some pylint errors do not have the error type until the second line after.
-PYLINT_SEMI_ITEM = re.compile(r"""
-    ^
-    (?P<type>[ERCW]):
-    \s*
-    (?P<where1>\d+),
-    \s*
-    (?P<where2>-?\d+):
-    \s+
-    (?P<desc>[\w\d\s\.\(\)/]+?)
-    $
-""", re.VERBOSE)
-
-
-PYLINT_ERROR_ITEM = re.compile(r"""
-    ^
-    [\^\s\|]+
-    \(
-    (?P<error>[\w_\.-]+)
-    \)
-    $
-""", re.VERBOSE)
-
-IF_STMT = re.compile(r"""
-    ^
-    if\s+
-    (?P<first>.*?)
-    \s+and\s+
-    (?P<second>.*?):
-    $
-""", re.VERBOSE)
-
-
-CONTINUATION = re.compile("""
-    ^
-    Wrong\scontinued\sindentation\s
-    \(
-    (?P<verb>.*?)
-    \s(?P<count>\d+)\s+spaces
-    \)
-    \.
-    $
-""", re.VERBOSE)
-
-
-HANGING = re.compile("""
-    ^
-    Wrong\shanging\sindentation\s
-    (
-        \(
-        (?P<verb>.*?)
-        \s(?P<count>\d+)\s+spaces
-        \)
-    )?
-    \.
-    $
-""", re.VERBOSE)
+from table_regex import (
+    MODULE_NAME,
+    PYLINT_ITEM,
+    PYLINT_SEMI_ITEM,
+    PYLINT_ERROR_ITEM,
+)
+from action_regex import (
+    STD_IMPORT,
+    FROM_IMP,
+    IF_STMT,
+    CONTINUATION,
+    HANGING,
+)
 
 
 # pylint: disable=logging-format-interpolation
