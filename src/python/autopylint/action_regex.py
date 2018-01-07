@@ -22,11 +22,21 @@ FROM_IMP = re.compile(r"""
     $
 """, re.VERBOSE)
 
-IF_STMT = re.compile(r"""
+IF_STMT_AND = re.compile(r"""
     ^
     if\s+
     (?P<first>.*?)
     \s+and\s+
+    (?P<second>.*?):
+    $
+""", re.VERBOSE)
+
+
+IF_STMT_OR = re.compile(r"""
+    ^
+    if\s+
+    (?P<first>.*?)
+    \s+or\s+
     (?P<second>.*?):
     $
 """, re.VERBOSE)

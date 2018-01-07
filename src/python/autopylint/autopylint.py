@@ -108,24 +108,39 @@ def line_split(s, length):
         """ Calculate indexes where character is 'k' """
         return [i for i, c in enumerate(s) if c == k]
 
-    def remove_negative_counts(counts):
-        """ Filter the Counter to remove items with non+ counts """
-        return Counter({k: v for k, v in counts.items() if v > 0})
+    #def remove_negative_counts(counts):
+    #    """ Filter the Counter to remove items with non+ counts """
+    #    return Counter({k: v for k, v in counts.items() if v > 0})
 
     if len(s) <= length:
         result = [s]
     elif s.lstrip().startswith("#"):
+        # Hard/annoying to split a long comment
         result = [s]
+    elif re.match("^.*?#.*$", s)
+        ind0, non_indent = get_indent(s)
+        i = non_indent.index('#')
+        non_comment, comment = non_indent[:i].rstrip(), non_comment[i:]
+        if all(len(ind0 + part) < length):
+            result = [
+                ind0 + comment,
+                ind0 + non_comment,
+            ]
+        else:
+            result = None
     else:
         ind0, non_indent = get_indent(s)
-        ind1 = ind0 + "    "
         ind2 = ind0 + 2 * "    "
-        m = IF_STMT.match(non_indent)
-        if m:
-            g = m.groupdict()
+        m1 = IF_STMT_OR.match(non_indent)
+        m2 = IF_STMT_AND.match(non_indent)
+        if m1 or m2:
+            g, conj = (
+                m1.groupdict(), " or" if m1 else
+                m2.groupdict(), " and"
+            )
             result = [
                 ind0 + "if (",
-                ind2 + g["first"] + " and",
+                ind2 + g["first"] + conj,
                 ind2 + g["second"],
                 ind0 + "):"
             ]
