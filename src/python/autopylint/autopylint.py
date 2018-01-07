@@ -32,6 +32,13 @@ from src.python.autopylint.action_regex import (
     CONTINUATION,
     HANGING,
 )
+from src.python.autopylint.repair_regex import (
+    ASSIGNMENTS,
+    COMPARISONS,
+    START_BRACKETS,
+    END_BRACKETS,
+    WHITESPACE_TABLE,
+)
 
 
 # pylint: disable=logging-format-interpolation
@@ -178,57 +185,7 @@ def bad_whitespace(editor, item):
     """ Pylint method to fix bad-whitespace error """
     line_no = item.line_no
     error_text = editor.lines[line_no]
-    comparisons = r"(>=|<=|>|<|!=|==)"
-    assignments = r"(\+=|-=|/=|\*=|=)"
-    start_brackets = r"(\{|\[|\()"
-    end_brackets = r"(\}|\]|\))"
-    table = {
-        "Exactly one space required after :": [
-            (r":\s*(\S+)", r": \1"),
-            # (r":\s+", ": "),
-            # (r":(\S+)", r": \1"),
-        ],
-        "Exactly one space required after comma": [
-            (r"(.*?),\s*", r"\1, ", {}),
-        ],
-        "Exactly one space required after comparison": [
-            (r"(.*){0}\s*(\S+)".format(comparisons), r"\1\2 \3", {}),
-            # (r"(.*){0}\s+".format(comparisons), r"\1\2 ", {}),
-            # (r"(.*){0}(\S+)".format(comparisons), r"\1\2 \3", {}),
-        ],
-        "Exactly one space required around assignment": [
-            (r"(.*\S+)\s*{0}\s*(\S+)".format(assignments), r"\1 \2 \3", {'count': 1}),
-            # (r"(.*\S+)=\s+", r"\1 = ", {'count': 1}),
-            # (r"(.*)\s+=(\S+)", r"\1 = \2", {'count': 1}),
-            # (r"(.*)\s+=\s+", r"\1 = ", {'count': 1}),
-        ],
-        "Exactly one space required around comparison": [
-            (r"(.*\S+)\s*{0}\s*".format(comparisons), r"\1 \2 ", {}),
-            # (r"(.*)\s+{0}\s+".format(comparisons), r"\1 \2", {}),
-            # (r"(.*\S+){0}\s+".format(comparisons), r"\1 \2 ", {}),
-            # (r"(.*)\s+{0}(\S+)".format(comparisons), r"\1 \2 \3", {}),
-            # (r"(.*\S+){0}(\S+)".format(comparisons), r"\1 \2 \3", {}),
-        ],
-        "No space allowed around keyword argument assignment": [
-            (r"(.*\S+)\s*{0}\s*(\S+)".format(assignments), r"\1\2\3", {'count': 1}),
-            # (r"(.*\S+)=\s+", r"\1=", {'count': 1}),
-            # (r"(.*)\s+=(\S+)", r"\1=\2", {'count': 1}),
-            # (r"(.*\S+)=(\S+)", r"\1=\2", {'count': 1}),
-        ],
-        "No space allowed before :": [
-            (r"(.*)\s+:", r"\1:", {}),
-        ],
-        "No space allowed after bracket": [
-            (r"(.*){0}\s+".format(start_brackets), r"\1\2", {}),
-        ],
-        "No space allowed before bracket": [
-            (r"(.*)\s+{0}".format(end_brackets), r"\1\2", {}),
-        ],
-        "No space allowed before comma": [
-            (r"(.*)\s+,", r"\1,", {}),
-        ],
-    }
-    x = table.get(item.desc)
+    x = WHITESPACE_TABLE.get(item.desc)
     if x:
         repaired_line = error_text
         for regex, repl, kwargs in x:
