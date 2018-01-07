@@ -19,13 +19,13 @@ from sed.engine import (
     REPEAT, NEXT, CUT, ANY,
 )
 
-from table_regex import (
+from src.python.autopylint.table_regex import (
     MODULE_NAME,
     PYLINT_ITEM,
     PYLINT_SEMI_ITEM,
     PYLINT_ERROR_ITEM,
 )
-from action_regex import (
+from src.python.autopylint.action_regex import (
     STD_IMPORT,
     FROM_IMP,
     IF_STMT,
@@ -43,6 +43,7 @@ Item = namedtuple("Item", ["type", "line_no", "line_offset", "desc", "error"])
 
 
 def item_assert(item):
+    """ Assert that Item is correctly constructed """
     assert isinstance(item.type, str)
     assert isinstance(item.desc, str)
     assert isinstance(item.error, str)
@@ -95,14 +96,14 @@ def get_indent(src):
 
 
 def line_split(s, length):
+    """ Helper method to split lines """
     def get_counts(s, k):
+        """ Calculate indexes where character is 'k' """
         return [i for i, c in enumerate(s) if c == k]
 
     def remove_negative_counts(counts):
-        try:
-            return +counts
-        except TypeError:
-            return Counter({k: v for k, v in counts.items() if v > 0})
+        """ Filter the Counter to remove items with non+ counts """
+        return Counter({k: v for k, v in counts.items() if v > 0})
 
     if len(s) <= length:
         result = [s]
@@ -141,6 +142,7 @@ def line_split(s, length):
     return result
 
 def find_string(s):
+    """ Find start and end of a quoted string """
     result = next((i, c) for i, c in enumerate(s) if c in ('"', "'"))
     if result is not None:
         start, quote_char = result
@@ -261,8 +263,8 @@ def bad_continuation(editor, item):
         if verb:
             repaired_line = (
                 error_text[count:] if verb == "remove" else
-                ((" " * count) + error_text if verb == "add"
-                else None)
+                (" " * count) + error_text if verb == "add" else
+                None
             )
             if repaired_line is not None:
                 editor.replace_range((line_no, line_no + 1), [repaired_line])
@@ -495,6 +497,7 @@ def anomalous_backslash_in_string(editor, item):
 
 
 def line_too_long(editor, item):
+    """ Pylint line-too-long method """
     line_no = item.line_no
     error_text = editor.lines[line_no]
     new_lines = line_split(error_text, 100)
