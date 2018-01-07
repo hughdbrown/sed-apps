@@ -9,7 +9,7 @@ END_BRACKETS = r"(\}|\]|\))"
 
 WHITESPACE_TABLE = {
     "Exactly one space required after :": [
-        (r":\s*(\S+)", r": \1"),
+        (r":\s*(\S+)", r": \1", {}),
         # (r":\s+", ": "),
         # (r":(\S+)", r": \1"),
     ],
@@ -17,7 +17,7 @@ WHITESPACE_TABLE = {
         (r"(.*?),\s*", r"\1, ", {}),
     ],
     "Exactly one space required after comparison": [
-        (r"(.*){0}\s*(\S+)".format(COMPARISONS), r"\1\2 \3", {}),
+        (r"(.*?){0}\s*(\S+)".format(COMPARISONS), r"\1\2 \3", {}),
         # (r"(.*){0}\s+".format(COMPARISONS), r"\1\2 ", {}),
         # (r"(.*){0}(\S+)".format(COMPARISONS), r"\1\2 \3", {}),
     ],
@@ -41,16 +41,15 @@ WHITESPACE_TABLE = {
         # (r"(.*\S+)=(\S+)", r"\1=\2", {'count': 1}),
     ],
     "No space allowed before :": [
-        (r"(.*)\s+:", r"\1:", {}),
+        (r"(.*?)\s+:", r"\1:", {}),
     ],
     "No space allowed after bracket": [
-        (r"(.*){0}\s+".format(START_BRACKETS), r"\1\2", {}),
+        (r"(.*?){0}\s+".format(START_BRACKETS), r"\1\2", {}),
     ],
     "No space allowed before bracket": [
-        (r"(.*)\s+{0}".format(END_BRACKETS), r"\1\2", {}),
+        (r"(.*?)\s+{0}".format(END_BRACKETS), r"\1\2", {}),
     ],
     "No space allowed before comma": [
-        (r"(.*)\s+,", r"\1,", {}),
+        (r"(.*?)\s+,", r"\1,", {}),
     ],
 }
-
