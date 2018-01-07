@@ -117,7 +117,7 @@ def line_split(s, length):
     elif s.lstrip().startswith("#"):
         # Hard/annoying to split a long comment
         result = [s]
-    elif re.match("^.*?#.*$", s)
+    elif re.match(r"^.*?#.*$", s):
         ind0, non_indent = get_indent(s)
         i = non_indent.index('#')
         non_comment, comment = non_indent[:i].rstrip(), non_comment[i:]

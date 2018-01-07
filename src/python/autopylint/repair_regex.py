@@ -22,7 +22,7 @@ WHITESPACE_TABLE = {
         # (r"(.*){0}(\S+)".format(COMPARISONS), r"\1\2 \3", {}),
     ],
     "Exactly one space required around assignment": [
-        (r"(.*?\S+)\s*{0}\s*(\S+)".format(ASSIGNMENTS), r"\1 \2 \3", {'count': 1}),
+        (r"(.*?[\w\d_\[\]\(\)]+)\s*{0}\s*(\S+)".format(ASSIGNMENTS), r"\1 \2 \3", {'count': 1}),
         # (r"(.*\S+)=\s+", r"\1 = ", {'count': 1}),
         # (r"(.*)\s+=(\S+)", r"\1 = \2", {'count': 1}),
         # (r"(.*)\s+=\s+", r"\1 = ", {'count': 1}),
