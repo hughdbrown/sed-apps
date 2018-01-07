@@ -7,10 +7,26 @@ import pytest
 
 from src.python.autopylint.repair_regex import (
     WHITESPACE_TABLE,
+    ASSIGNMENTS,
 )
 
 
 class TestAutopylintRegex(object):
+    @pytest.mark.parametrize(
+        "src,expected",
+        [
+            ("i = 1", "="),
+            ("i += 1", "+="),
+            ("i -= 1", "-="),
+            ("i /= 1", "/="),
+            ("i *= 1", "*="),
+        ]
+    )
+    def test_assignment(self, src, expected):
+        m = re.match(r"^.*?" + ASSIGNMENTS, src)
+        assert m, src
+        assert m.group(1) == expected, src
+
     @pytest.mark.parametrize(
         "src,expected",
         [
